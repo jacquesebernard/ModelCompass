@@ -6,7 +6,7 @@ Local-first React + TypeScript app with an Express server. No accounts, payments
 
 ## Run locally
 
-Requires **Node.js 22.12+ within the 22.x release line** and npm. From this directory:
+Requires **Node.js 22.12+** and npm. From this directory:
 
 ```sh
 npm install
@@ -101,7 +101,7 @@ CI runs type checking, synthetic unit/integration tests and the production build
 
 Vercel needs both the static frontend and an API function. `vercel.json` builds the Vite UI into `dist` and routes `/api/*` to `api/index.ts`, which exports the Express app without starting a port listener. Deploying only `dist` causes `/api/models` and `/api/connection` to return Vercel 404s; adding API keys alone cannot fix missing routes. Local development and `npm start` continue using `server/index.ts`.
 
-Use the repository root as the Vercel project root, the **Vite** framework preset, and Node.js **22.x**. The package engine range keeps deployments on that major version while allowing compatible minor and patch updates. Enable **Fluid Compute** for the configured 300-second function limit and **Automatically expose System Environment Variables** so the API can recognize the exact deployment, branch and production hostnames. Additional custom domains can be allowed by setting `HOST` to the hostname without `https://`; `HOST` does not start a listener in the Vercel function. The configuration applies the production security headers to the static frontend as well as the API. Protect the hosted demo with access control, such as appropriate Vercel Deployment Protection; the app has no built-in authentication.
+Use the repository root as the Vercel project root, the **Vite** framework preset, and Node.js **22.x** or a newer compatible version. Enable **Fluid Compute** for the configured 300-second function limit and **Automatically expose System Environment Variables** so the API can recognize the exact deployment, branch and production hostnames. Additional custom domains can be allowed by setting `HOST` to the hostname without `https://`; `HOST` does not start a listener in the Vercel function. The configuration applies the production security headers to the static frontend as well as the API. Protect the hosted demo with access control, such as appropriate Vercel Deployment Protection; the app has no built-in authentication.
 
 Add server environment variables to the intended Vercel environment (Production and, if used, Preview):
 
@@ -120,7 +120,7 @@ Add server environment variables to the intended Vercel environment (Production 
 
 Never prefix secrets with `VITE_`. A local `.env` is ignored by source control and does not configure a Git-based Vercel deployment. Redeploy after changing code or environment variables.
 
-After deployment, open `/api/health`: it must return `{"status":"ok"}` even without provider keys. `/api/connection` reports configuration flags, and `/api/models` reports connection/setup errors as JSON. A platform 404 indicates a deployment/routing problem; an `Unrecognized host` 403 indicates missing hostname configuration. Check Vercel function logs for startup failures caused by invalid environment values. The explicit `typeRoots` in `tsconfig.json` keep TypeScript 7's function transpilation pointed at the repository's installed typings when Vercel creates a temporary compiler config outside the project; missing `node` or `vite/client` typings at that stage are build configuration errors, rather than API-key errors.
+After deployment, open `/api/health`: it must return `{"status":"ok"}` even without provider keys. `/api/connection` reports configuration flags, and `/api/models` reports connection/setup errors as JSON. A platform 404 indicates a deployment/routing problem; an `Unrecognized host` 403 indicates missing hostname configuration. Check Vercel function logs for startup failures caused by invalid environment values.
 
 Mode changes, MCP selections, rate limits and snapshots are per function instance. Persist the mode and tool selection in environment variables rather than relying on Connections UI changes across cold starts. The temporary cache is not durable or shared across instances, so cold starts and scaling can cause additional AA fetches. This deployment does not provide a distributed cache or global provider spending limits.
 
