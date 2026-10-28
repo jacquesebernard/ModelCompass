@@ -93,9 +93,36 @@ npm run build
 npm start
 ```
 
-`npm start` serves the production build with the same server and `.env`. Keep the default loopback binding for personal use. For an ordinary private self-hosted installation, configure `HOST` and `PORT`, use a TLS reverse proxy with access control, and ensure its forwarded Host/Origin matches the configured hostname. The app intentionally has no account system and rejects unrecognized hosts and cross-origin API access. Never expose a credential-bearing installation anonymously. There is no public deployment in this project.
+`npm start` serves the production build with the same server and `.env`. Keep the default loopback binding for personal use. For an ordinary private self-hosted installation, configure `HOST` and `PORT`, use a TLS reverse proxy with access control, and ensure its forwarded Host/Origin matches the configured hostname. The app intentionally has no account system and rejects unrecognized hosts and cross-origin API access. Protect a credential-bearing installation with private access control.
 
 CI runs type checking, synthetic unit/integration tests and the production build without network APIs or credentials. See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
+
+### Vercel deployment
+
+Vercel needs both the static frontend and an API function. `vercel.json` builds the Vite UI into `dist` and routes `/api/*` to `api/index.ts`, which exports the Express app without starting a port listener. Deploying only `dist` causes `/api/models` and `/api/connection` to return Vercel 404s; adding API keys alone cannot fix missing routes. Local development and `npm start` continue using `server/index.ts`.
+
+Use the repository root as the Vercel project root, the **Vite** framework preset, and Node.js **22.x** or a newer compatible version. Enable **Fluid Compute** for the configured 300-second function limit and **Automatically expose System Environment Variables** so the API can recognize the exact deployment, branch and production hostnames. Additional custom domains can be allowed by setting `HOST` to the hostname without `https://`; `HOST` does not start a listener in the Vercel function. The configuration applies the production security headers to the static frontend as well as the API. Protect the hosted demo with access control, such as appropriate Vercel Deployment Protection; the app has no built-in authentication.
+
+Add server environment variables to the intended Vercel environment (Production and, if used, Preview):
+
+| Variable | Value |
+| --- | --- |
+| `DATA_MODE` | `live` for the live connection |
+| `AA_API_KEY` | Your own Artificial Analysis key |
+| `AA_MCP_TOOL` | The discovered read-only language-model tool selected locally |
+| `AA_MCP_ARGS` | The same JSON arguments used locally, without surrounding shell quotes |
+| `AA_USE_CONFIRMED` | `true` only for a use permitted by your agreement |
+| `ADVISOR_API_KEY` | Your own chat-provider key, if using the advisor |
+| `ADVISOR_MODEL` | The configured advisor model, if using the advisor |
+| `ADVISOR_BASE_URL` | The same provider URL used locally; required for providers other than the default |
+| `ADVISOR_TIMEOUT_MS` | Keep the value tested locally; `120000` was tested with OpenRouter free routing |
+| `AA_CACHE_PATH` | Leave unset for the writable temporary-directory default, or use `/tmp/model-compass/aa-snapshot.json` |
+
+Never prefix secrets with `VITE_`. A local `.env` is ignored by source control and does not configure a Git-based Vercel deployment. Redeploy after changing code or environment variables.
+
+After deployment, open `/api/health`: it must return `{"status":"ok"}` even without provider keys. `/api/connection` reports configuration flags, and `/api/models` reports connection/setup errors as JSON. A platform 404 indicates a deployment/routing problem; an `Unrecognized host` 403 indicates missing hostname configuration. Check Vercel function logs for startup failures caused by invalid environment values.
+
+Mode changes, MCP selections, rate limits and snapshots are per function instance. Persist the mode and tool selection in environment variables rather than relying on Connections UI changes across cold starts. The temporary cache is not durable or shared across instances, so cold starts and scaling can cause additional AA fetches. This deployment does not provide a distributed cache or global provider spending limits.
 
 ## Verification and current limitations
 
