@@ -83,7 +83,7 @@ export function createApp(
   };
   installSecurity(
     app,
-    config.allowedHosts,
+    config.HOST,
     options.production ?? process.env.NODE_ENV === "production",
   );
   app.use("/api", apiRateLimit());

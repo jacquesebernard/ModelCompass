@@ -1,9 +1,6 @@
 import "dotenv/config";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import { z } from "zod";
 import { secureProviderURL } from "./security";
-const onVercel = process.env.VERCEL === "1";
 const env = z
   .object({
     PORT: z.coerce.number().int().min(1).max(65535).default(5173),
@@ -24,11 +21,7 @@ const env = z
       .min(1000)
       .max(120000)
       .default(120000),
-    AA_CACHE_PATH: z.string().default(
-      onVercel
-        ? join(tmpdir(), "model-compass", "aa-snapshot.json")
-        : ".cache/aa-snapshot.json",
-    ),
+    AA_CACHE_PATH: z.string().default(".cache/aa-snapshot.json"),
     AA_USE_CONFIRMED: z.enum(["true", "false"]).default("false"),
     ADVISOR_API_KEY: z.string().default(""),
     ADVISOR_MODEL: z.string().default(""),
@@ -56,16 +49,6 @@ const env = z
   .parse(process.env);
 export const config = {
   ...env,
-  allowedHosts: [
-    env.HOST,
-    ...(onVercel
-      ? [
-          process.env.VERCEL_URL,
-          process.env.VERCEL_BRANCH_URL,
-          process.env.VERCEL_PROJECT_PRODUCTION_URL,
-        ].filter((host): host is string => Boolean(host))
-      : []),
-  ],
   mode: env.DATA_MODE,
   tool: env.AA_MCP_TOOL,
   toolArgs: z

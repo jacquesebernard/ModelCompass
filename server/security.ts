@@ -10,24 +10,17 @@ function hostname(authority: string): string | null {
     return null;
   }
 }
-export function allowedHost(
-  authority: string,
-  configuredHosts: string | readonly string[],
-): boolean {
+export function allowedHost(authority: string, bindHost: string): boolean {
   const host = hostname(authority);
-  const hosts =
-    typeof configuredHosts === "string" ? [configuredHosts] : configuredHosts;
+  const configured = hostname(
+    isIP(bindHost) === 6 ? `[${bindHost}]` : bindHost,
+  );
   return (
     host !== null &&
     (loopbackHosts.has(host) ||
-      hosts.some((value) => {
-        const configured = hostname(isIP(value) === 6 ? `[${value}]` : value);
-        return (
-          !!configured &&
-          !["0.0.0.0", "[::]"].includes(configured) &&
-          host === configured
-        );
-      }))
+      (!!configured &&
+        !["0.0.0.0", "[::]"].includes(configured) &&
+        host === configured))
   );
 }
 export function secureProviderURL(value: string): boolean {
@@ -47,7 +40,7 @@ export function secureProviderURL(value: string): boolean {
 }
 export function installSecurity(
   app: Express,
-  configuredHosts: string | readonly string[],
+  bindHost: string,
   production: boolean,
 ) {
   app.disable("x-powered-by");
@@ -61,7 +54,7 @@ export function installSecurity(
         ? "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'"
         : "object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
     });
-    if (!allowedHost(req.headers.host ?? "", configuredHosts))
+    if (!allowedHost(req.headers.host ?? "", bindHost))
       return res.status(403).json({ error: "Unrecognized host." });
     // Express routes are case-insensitive by default; the guard must match.
     const path = req.path.toLowerCase();
