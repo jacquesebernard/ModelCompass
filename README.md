@@ -20,8 +20,10 @@ The dashboard places a large bubble chart beside the advisor on desktop; the adv
 ## Configure Artificial Analysis
 
 ```sh
-cp .env.example .env
+cp -n .env.example .env
 ```
+
+This creates `.env` only if it does not already exist, so rerunning the command preserves your local settings and credentials. `.env.example` is a template for a new local setup.
 
 1. Obtain your own organization key from [Artificial Analysis](https://artificialanalysis.ai/data-api). The [MCP documentation](https://artificialanalysis.ai/data-api/docs/mcp) supports API keys in `x-api-key` or a bearer token for unattended servers. This app uses `x-api-key`, on the Node server only.
 2. Set `AA_API_KEY` in `.env` and restart the server. **Do not paste credentials into chat, frontend code, screenshots, or a `VITE_` variable.**
@@ -93,7 +95,7 @@ npm run build
 npm start
 ```
 
-`npm start` serves the production build with the same server and `.env`. Keep the default loopback binding for personal use. For an ordinary private self-hosted installation, configure `HOST` and `PORT`, use a TLS reverse proxy with access control, and ensure its forwarded Host/Origin matches the configured hostname. The app intentionally has no account system and rejects unrecognized hosts and cross-origin API access. Never expose a credential-bearing installation anonymously. There is no public deployment in this project.
+`npm start` serves the production build with the same server and `.env`. Keep the default loopback binding for personal use. For an ordinary private self-hosted installation, configure `HOST` and `PORT`, use a TLS reverse proxy with access control, and ensure its forwarded Host/Origin matches the configured hostname. The app intentionally has no account system and rejects unrecognized hosts and cross-origin API access. Never expose a credential-bearing installation anonymously. This repository does not operate a shared service; operators are responsible for securing their own installations.
 
 CI runs type checking, synthetic unit/integration tests and the production build without network APIs or credentials. See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
 

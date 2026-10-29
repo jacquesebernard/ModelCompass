@@ -386,9 +386,7 @@ export default function Chart({
                         className="bubble-mark"
                         r={r}
                         fill={creatorColor(m.creator, creators)}
-                        fillOpacity={isSelected ? 0.18 : 0.12}
-                        stroke={creatorColor(m.creator, creators)}
-                        strokeWidth="2"
+                        fillOpacity={isSelected ? 0.86 : 0.68}
                       />
                     )}
                     {cost === 0 && (
