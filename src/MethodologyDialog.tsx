@@ -53,11 +53,13 @@ export default function MethodologyDialog({
       </p>
       <h3>Recommend reproducibly</h3>
       <p>
-        Hard constraints and active filters apply first. Each metric is
-        normalized using empirical midrank percentiles: (count below + ½ count
-        tied) / count measured. Missing metrics get no credit; candidates
-        missing a required metric are excluded. Cost percentiles are reversed.
-        We combine quality / speed / cost with these weights:
+        Hard constraints and active filters apply first. Quality, speed, and
+        estimated workload cost are normalized using empirical midrank
+        percentiles: (count below + ½ count tied) / count measured. Missing
+        values receive no score credit; candidates are excluded when missing
+        data prevents them from meeting an explicit hard constraint. Cost
+        percentiles are reversed. We combine these metrics with the weights
+        below:
       </p>
       <table>
         <thead>
@@ -65,7 +67,7 @@ export default function MethodologyDialog({
             <th>Priority</th>
             <th>Quality</th>
             <th>Speed</th>
-            <th>Cost</th>
+            <th>Estimated workload cost</th>
           </tr>
         </thead>
         <tbody>
@@ -95,6 +97,12 @@ export default function MethodologyDialog({
           </tr>
         </tbody>
       </table>
+      <p>
+        Recommendation scores and budget alternatives always use estimated
+        workload cost from your current workload. The chart’s Bubble size
+        setting changes the displayed cost measure and maximum-cost filter, but
+        not recommendation scoring.
+      </p>
       <p>
         The Compass fit score is this app’s relative score, not an official
         Artificial Analysis metric. Comparable task-specific indices replace

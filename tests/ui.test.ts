@@ -343,7 +343,7 @@ test("dashboard interactions: chart selection, filtering, estimates, ranking, ta
     assert.ok(document.querySelectorAll(".model-card").length <= 3);
     fireEvent.click(screen.getByRole("button", { name: "Chart view" }));
     assert.ok(screen.getByRole("group", { name: /Model comparison:/ }));
-    fireEvent.click(screen.getByRole("button", { name: /Demo workspace/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Connections" }));
     const dialog = screen.getByRole("dialog");
     assert.ok(within(dialog).getByText("Artificial Analysis MCP"));
     assert.equal(

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Compass,
   ArrowUpRight,
@@ -12,24 +12,19 @@ import {
   Plug,
   X,
   ChevronDown,
-  Check,
   Leaf,
   Gauge,
   BrainCircuit,
   Scale,
   Info,
   ExternalLink,
-  Plus,
   CircleHelp,
 } from "lucide-react";
 import type {
-  Connection,
-  DataResponse,
   Filters,
   Workload,
   Priority,
   CostMode,
-  Ranking,
   Requirements,
   Model,
 } from "../shared/types";
@@ -40,14 +35,17 @@ import {
   type ChartOrder,
 } from "../shared/chart";
 import type { TableSort } from "../shared/table";
-import { filterModels, estimateCost, estimateResponse } from "../shared/engine";
+import { filterModels } from "../shared/engine";
 import Chart from "./Chart";
 import Advisor from "./Advisor";
 import Connections from "./Connections";
 import ModelTable from "./ModelTable";
+import ComparisonSection from "./ComparisonSection";
 import CohortDialog from "./CohortDialog";
 import MethodologyDialog from "./MethodologyDialog";
-import { api, money, fmt, creatorColor, periodLabel } from "./format";
+import { periodLabel } from "./format";
+import { useModelData } from "./useModelData";
+import { useRanking } from "./useRanking";
 
 const priorities: { id: Priority; label: string; icon: typeof Scale }[] = [
   { id: "balanced", label: "Balanced", icon: Scale },
@@ -91,11 +89,7 @@ const chartOrders: { id: ChartOrder; label: string; description: string }[] = [
   },
 ];
 export default function App() {
-  const [data, setData] = useState<DataResponse | null>(null),
-    [connection, setConnection] = useState<Connection | null>(null),
-    [loading, setLoading] = useState(true),
-    [error, setError] = useState(""),
-    [notice, setNotice] = useState("");
+  const { data, connection, loading, error, setError, load } = useModelData();
   const [filters, setFilters] = useState<Filters>(defaultFilters),
     [workload, setWorkload] = useState<Workload>(defaultWorkload),
     [priority, setPriority] = useState<Priority>("balanced"),
@@ -105,10 +99,7 @@ export default function App() {
   const [tableSort, setTableSort] = useState<TableSort | null>(null);
   const [groupConfigurations, setGroupConfigurations] = useState(true);
   const [chartIncludedIds, setChartIncludedIds] = useState<string[]>([]);
-  const [selected, setSelected] = useState<string[]>([]),
-    [ranking, setRanking] = useState<Ranking | null>(null),
-    [requirements, setRequirements] = useState<Requirements | null>(null),
-    [rankingBusy, setRankingBusy] = useState(false),
+  const [requirements, setRequirements] = useState<Requirements | null>(null),
     [view, setView] = useState<"chart" | "table">("chart"),
     [expanded, setExpanded] = useState(false),
     [modal, setModal] = useState<
@@ -116,35 +107,26 @@ export default function App() {
     >(null);
   const [advisorBusy, setAdvisorBusy] = useState(false),
     [focusedId, setFocusedId] = useState<string | null>(null);
-  const rankAbort = useRef<AbortController | null>(null);
-  const comparison = useRef<HTMLElement | null>(null);
-  const load = async (force = false) => {
-    setLoading(true);
-    setError("");
-    try {
-      const [d, c] = await Promise.all([
-        api<DataResponse>(
-          force ? "/api/refresh" : "/api/models",
-          force ? {} : undefined,
-        ),
-        api<Connection>("/api/connection"),
-      ]);
-      setData(d);
-      setConnection(c);
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  };
-  useEffect(() => {
-    void load();
-    const interval = setInterval(() => void load(), 60000);
-    return () => {
-      clearInterval(interval);
-      rankAbort.current?.abort();
-    };
-  }, []);
+  const {
+    selected,
+    ranking,
+    rankingBusy,
+    notice,
+    acceptRanking,
+    toggleSelect,
+    clearComparison,
+    resetComparison,
+    rank,
+  } = useRanking({
+    filters,
+    workload,
+    priority,
+    costMode,
+    requirements,
+    dataFetchedAt: data?.snapshot?.fetchedAt,
+    advisorBusy,
+    setError,
+  });
 
   const models = data?.snapshot?.models ?? emptyModels;
   const creators = [...new Set(models.map((m) => m.creator))].sort();
@@ -187,64 +169,11 @@ export default function App() {
     key: keyof Workload,
     value: number | Workload["period"],
   ) => setWorkload((w) => ({ ...w, [key]: value }));
-  const toggleSelect = (id: string) => {
-    setNotice("");
-    setSelected((ids) => {
-      if (ids.includes(id)) return ids.filter((x) => x !== id);
-      if (ids.length >= 3) {
-        setNotice("You can compare up to 3 models. Remove one to add another.");
-        return ids;
-      }
-      return [...ids, id];
-    });
-  };
-  const acceptRanking = (r: Ranking) => {
-    setRanking(r);
-    setSelected(r.recommendations.map((x) => x.modelId));
-  };
   const acceptRequirements = (r: Requirements) => {
     setRequirements(r);
     setWorkload(r.workload);
     setPriority(r.priority);
   };
-  const rank = async () => {
-    rankAbort.current?.abort();
-    const controller = new AbortController();
-    rankAbort.current = controller;
-    setRankingBusy(true);
-    setError("");
-    try {
-      const r = await api<Ranking>(
-        "/api/rank",
-        {
-          filters,
-          workload,
-          priority,
-          costMode,
-          ...(requirements ? { requirements } : {}),
-        },
-        controller.signal,
-      );
-      acceptRanking(r);
-    } catch (e) {
-      if ((e as Error).name !== "AbortError") setError((e as Error).message);
-    } finally {
-      if (rankAbort.current === controller) setRankingBusy(false);
-    }
-  };
-  useEffect(() => {
-    if (!ranking || advisorBusy) return;
-    const timer = setTimeout(() => void rank(), 350);
-    return () => clearTimeout(timer);
-  }, [
-    JSON.stringify(filters),
-    JSON.stringify(workload),
-    priority,
-    costMode,
-    requirements,
-    data?.snapshot?.fetchedAt,
-    advisorBusy,
-  ]);
   const reset = () => {
     setFilters(defaultFilters);
     setWorkload(defaultWorkload);
@@ -255,10 +184,26 @@ export default function App() {
     setTableSort(null);
     setGroupConfigurations(true);
     setChartIncludedIds([]);
-    setSelected([]);
-    setRanking(null);
+    resetComparison();
     setRequirements(null);
-    setNotice("");
+  };
+  const highlightModel = (model: Model) => {
+    setView(
+      model.speed === null || model.intelligence === null ? "table" : "chart",
+    );
+    setFilters({ ...defaultFilters, version: model.version });
+    setFocusedId(model.id);
+    document.getElementById("explorer-title")?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+  };
+  const browseTable = () => {
+    setView("table");
+    document.getElementById("explorer-title")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
   };
   const numeric = (value: string) => (value === "" ? null : Number(value));
   const refreshLabel =
@@ -852,8 +797,7 @@ export default function App() {
               onSetup={() => setModal("connections")}
               onReset={() => {
                 setRequirements(null);
-                setRanking(null);
-                setSelected([]);
+                clearComparison();
               }}
               onBusy={setAdvisorBusy}
               demo={demo}
@@ -891,226 +835,23 @@ export default function App() {
               )}
             </button>
           </section>
-          <section
-            className="comparison"
-            ref={comparison}
-            aria-labelledby="comparison-title"
-          >
-            <div className="comparison-heading">
-              <div>
-                <span className="small-eyebrow">A CLOSER LOOK</span>
-                <h2 id="comparison-title">
-                  {ranking ? "Your shortlist" : "Compare your contenders"}{" "}
-                  <span>{selected.length}/3</span>
-                </h2>
-              </div>
-              <div className="comparison-actions">
-                {ranking && (
-                  <span className="fine-print">
-                    {ranking.eligible} eligible · {ranking.excluded} excluded
-                  </span>
-                )}
-                {(selected.length > 0 || ranking) && (
-                  <button
-                    className="text-button"
-                    onClick={() => {
-                      setSelected([]);
-                      setRanking(null);
-                    }}
-                  >
-                    Clear comparison <X size={13} />
-                  </button>
-                )}
-              </div>
-            </div>
-            {notice && (
-              <p className="selection-notice" role="status">
-                {notice}
-              </p>
-            )}
-            {ranking && (
-              <div className="ranking-notes" role="status">
-                <span>
-                  <Check size={14} /> Ranked in application code · {priority}{" "}
-                  priority · {demo ? "synthetic data" : "retrieved data"}
-                </span>
-                {ranking.notes.map((n, i) => (
-                  <p key={i}>{n}</p>
-                ))}
-              </div>
-            )}
-            <div className="comparison-grid">
-              {displayed.map((m, i) => {
-                const rec = ranking?.recommendations.find(
-                  (r) => r.modelId === m.id,
-                );
-                return (
-                  <article className="model-card" key={m.id}>
-                    <div className="model-card-top">
-                      <span
-                        className="model-number"
-                        style={{
-                          color: creatorColor(m.creator, creators),
-                          background: `${creatorColor(m.creator, creators)}14`,
-                        }}
-                      >
-                        {i + 1}
-                      </span>
-                      <span className="model-role">
-                        {rec ? rec.roles.join(" · ") : "Selected model"}
-                      </span>
-                      <button
-                        className="icon-button"
-                        aria-label={`Remove ${m.name}`}
-                        onClick={() => toggleSelect(m.id)}
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                    <h3>{m.name}</h3>
-                    <p className="model-creator">
-                      <i
-                        style={{
-                          background: creatorColor(m.creator, creators),
-                        }}
-                      />
-                      {m.creator} <span>{m.version}</span>
-                    </p>
-                    <div className="model-metrics">
-                      <div>
-                        <span>Intelligence</span>
-                        <strong
-                          className={
-                            m.intelligence === null ? "unavailable" : ""
-                          }
-                        >
-                          {fmt(m.intelligence)}
-                        </strong>
-                      </div>
-                      <div>
-                        <span>Output speed</span>
-                        <strong
-                          className={m.speed === null ? "unavailable" : ""}
-                        >
-                          {fmt(m.speed)}
-                          <small> tok/s</small>
-                        </strong>
-                      </div>
-                      <div>
-                        <span>Estimated / {periodLabel(workload)}</span>
-                        <strong
-                          className={
-                            estimateCost(m, workload) === null
-                              ? "unavailable"
-                              : ""
-                          }
-                        >
-                          {money(estimateCost(m, workload))}
-                        </strong>
-                      </div>
-                    </div>
-                    <dl className="model-details">
-                      <dt>Input / output per 1M</dt>
-                      <dd>
-                        {money(m.inputPrice)} / {money(m.outputPrice)}
-                      </dd>
-                      <dt>Benchmark cost / task</dt>
-                      <dd>{money(m.benchmarkCost)}</dd>
-                      <dt>Est. latency + generation</dt>
-                      <dd>
-                        {estimateResponse(m, workload) === null
-                          ? "Unavailable"
-                          : `${fmt(estimateResponse(m, workload))} s`}
-                      </dd>
-                      {requirements?.task === "coding" && (
-                        <>
-                          <dt>Coding score</dt>
-                          <dd>{fmt(m.taskScores.coding?.value)}</dd>
-                        </>
-                      )}
-                      {rec && (
-                        <>
-                          <dt>
-                            Compass fit score{" "}
-                            <button
-                              className="inline-help"
-                              aria-label="About Compass fit scores"
-                              onClick={() => setModal("methodology")}
-                            >
-                              <CircleHelp size={11} />
-                            </button>
-                          </dt>
-                          <dd>{rec.score}/100</dd>
-                        </>
-                      )}
-                    </dl>
-                    {rec && <p className="fit-reason">{rec.why}</p>}
-                    <p className="tradeoff">
-                      {rec
-                        ? `${rec.qualityBasis}. ${rec.tradeoff}`
-                        : "Select a priority and find matches to see how this model compares."}
-                    </p>
-                    {!filtered.some((x) => x.id === m.id) && (
-                      <p className="metric-warning">
-                        Outside the current chart filters.
-                      </p>
-                    )}
-                    <button
-                      className="highlight-button"
-                      onClick={() => {
-                        setView(
-                          m.speed === null || m.intelligence === null
-                            ? "table"
-                            : "chart",
-                        );
-                        setFilters({ ...defaultFilters, version: m.version });
-                        setFocusedId(m.id);
-                        document
-                          .getElementById("explorer-title")
-                          ?.scrollIntoView({
-                            behavior: "smooth",
-                            block: "center",
-                          });
-                      }}
-                    >
-                      <ChartScatter size={13} />{" "}
-                      {m.speed === null || m.intelligence === null
-                        ? "View in table"
-                        : "Highlight on chart"}{" "}
-                      <ArrowUpRight size={12} />
-                    </button>
-                  </article>
-                );
-              })}
-              {!displayed.length && (
-                <button
-                  className="empty-comparison empty-comparison-full"
-                  onClick={() => {
-                    setView("table");
-                    document
-                      .getElementById("explorer-title")
-                      ?.scrollIntoView({ behavior: "smooth", block: "start" });
-                  }}
-                >
-                  <span>
-                    <Plus size={20} />
-                  </span>
-                  <strong>Choose models to compare</strong>
-                  <small>
-                    Select a bubble or browse the table · Up to 3 models
-                  </small>
-                </button>
-              )}
-            </div>
-            {displayed.length > 0 && (
-              <p className="estimate-note">
-                <Info size={13} /> Response estimate = available time to first
-                token + output tokens ÷ output speed. Additional reasoning or
-                processing time is not measured. Suitability is inferred; task
-                accuracy is not guaranteed.
-              </p>
-            )}
-          </section>
+          <ComparisonSection
+            displayed={displayed}
+            selectedCount={selected.length}
+            ranking={ranking}
+            priority={priority}
+            demo={demo}
+            requirements={requirements}
+            workload={workload}
+            filtered={filtered}
+            creators={creators}
+            notice={notice}
+            onClear={clearComparison}
+            onSelect={toggleSelect}
+            onHighlight={highlightModel}
+            onBrowseTable={browseTable}
+            onMethodology={() => setModal("methodology")}
+          />
           {data?.snapshot?.warnings.map((warning, i) => (
             <p key={i} className="dataset-warning">
               <Info size={13} />
@@ -1154,9 +895,8 @@ export default function App() {
           connection={connection}
           onClose={() => setModal(null)}
           onChanged={() => {
-            setRanking(null);
+            clearComparison();
             setRequirements(null);
-            setSelected([]);
             setChartIncludedIds([]);
             setChartOrder("intelligence");
             setTableSort(null);

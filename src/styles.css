@@ -1015,30 +1015,31 @@ small {
   overflow: hidden;
   min-width: 0;
   max-height: 920px;
-  background: #fbfcff;
+  background: #f8faf8;
 }
 .advisor-heading {
   padding: 23px 20px 20px;
   display: flex;
   align-items: center;
   gap: 10px;
-  border-bottom: 1px solid #e0e8f3;
-  background: #fff;
+  border-bottom: 1px solid #e6eae4;
+  background: linear-gradient(135deg, #fff 25%, #f8faf7 100%);
 }
 .advisor-mark {
   width: 34px;
   height: 34px;
-  border: 1px solid #d4e0f1;
-  background: #eff5fc;
-  border-radius: 9px;
+  border: 1px solid #dce6f1;
+  background: linear-gradient(145deg, #f4f8fd, #eaf1fa);
+  border-radius: 11px;
   color: var(--accent);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 .advisor-heading h2 {
-  font-size: 13px;
+  font-size: 14px;
   letter-spacing: -0.3px;
+  font-weight: 650;
 }
 .advisor-heading > div:nth-child(2) > span {
   font-size: 10px;
@@ -1051,7 +1052,7 @@ small {
 }
 .advisor-scroll {
   overflow: auto;
-  padding: 25px 23px 15px;
+  padding: 22px 20px 16px;
   flex: 1;
   min-height: 220px;
   scroll-behavior: smooth;
@@ -1070,11 +1071,11 @@ small {
   margin-top: 16px;
 }
 .advisor-intro p {
-  font-size: 11px;
-  line-height: 1.9;
+  font-size: 12px;
+  line-height: 1.75;
   color: var(--muted);
   margin-top: 14px;
-  max-width: 230px;
+  max-width: 250px;
 }
 .example-prompts {
   margin-top: 23px;
@@ -1083,31 +1084,46 @@ small {
   gap: 8px;
 }
 .example-prompts button {
-  padding: 11px 12px;
-  border: 1px solid var(--control-border);
+  padding: 12px 13px;
+  border: 1px solid #e2e8e1;
   background: #fff;
-  border-radius: 7px;
+  border-radius: 11px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 6px;
   text-align: left;
-  font-size: 10px;
-  color: var(--muted);
-  line-height: 1.6;
+  font-size: 11px;
+  color: var(--text);
+  line-height: 1.55;
+  box-shadow: 0 2px 5px #20282308;
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    box-shadow 0.15s,
+    transform 0.15s;
 }
 .example-prompts button:hover {
-  background: #edf3fb;
-  border-color: var(--accent);
+  background: #f5f8f4;
+  border-color: #bac9dc;
   color: var(--accent);
+  box-shadow: 0 5px 12px #2028230d;
+  transform: translateY(-1px);
+}
+.example-prompts button:focus-visible {
+  border-color: var(--focus);
+  box-shadow: 0 0 0 3px #194c8f1c;
 }
 .example-prompts svg {
-  color: var(--muted);
+  color: var(--accent);
+  flex-shrink: 0;
 }
 .advisor-setup {
-  margin-top: 22px;
-  padding: 13px 0 3px;
-  border-top: 1px solid #e0e8f3;
+  margin-top: 20px;
+  padding: 13px 14px;
+  border: 1px solid #ebe6d7;
+  border-radius: 11px;
+  background: #fbf9f2;
 }
 .advisor-setup > span {
   display: flex;
@@ -1126,21 +1142,28 @@ small {
   font-size: 10px;
 }
 .advisor-compose {
-  margin: 8px 16px 0;
-  border: 1px solid var(--control-border);
-  border-radius: 9px;
-  box-shadow: 0 2px 3px #153d7010;
+  margin: 0 16px 14px;
+  border: 1px solid #dce3dc;
+  border-radius: 14px;
+  box-shadow: 0 3px 10px #2028230c;
   background: #fff;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 .advisor-compose:focus-within {
   border-color: var(--focus);
+  box-shadow:
+    0 0 0 3px #194c8f18,
+    0 4px 14px #2028230c;
 }
 .advisor-compose textarea {
   border: 0;
-  border-radius: 9px;
-  padding: 12px 13px 1px;
-  font-size: 11px;
-  min-height: 70px;
+  border-radius: 14px;
+  padding: 14px 14px 5px;
+  font-size: 12px;
+  line-height: 1.6;
+  min-height: 76px;
   width: 100%;
   background: transparent;
   resize: vertical;
@@ -1158,7 +1181,8 @@ small {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 4px 9px 9px;
+  border-top: 1px solid #f0f2ee;
+  padding: 8px 10px 10px;
   gap: 5px;
 }
 .compose-actions > span {
@@ -1169,12 +1193,26 @@ small {
 .send-button {
   background: var(--accent);
   color: var(--on-accent);
-  border-radius: 7px;
-  width: 28px;
-  height: 28px;
+  border-radius: 10px;
+  width: 34px;
+  height: 34px;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition:
+    background 0.15s,
+    box-shadow 0.15s,
+    transform 0.15s;
+}
+.send-button:not(:disabled):hover {
+  background: var(--accent-hover);
+  box-shadow: 0 4px 10px #194c8f30;
+  transform: translateY(-1px);
+}
+.send-button:disabled {
+  background: #e9edf1;
+  color: #7a858e;
+  cursor: not-allowed;
 }
 .priorities-bar {
   display: flex;
@@ -1700,49 +1738,65 @@ caption {
 .messages {
   display: flex;
   flex-direction: column;
-  gap: 17px;
+  gap: 13px;
 }
 .message > span {
   font-size: 10px;
   color: var(--muted);
   display: block;
-  margin-bottom: 5px;
+  margin-bottom: 7px;
+  font-weight: 650;
+  letter-spacing: 0.25px;
 }
 .message p {
-  font-size: 11px;
-  line-height: 1.9;
-  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--text);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 .message.user {
-  background: #eaf1fb;
-  border-radius: 9px;
+  align-self: flex-end;
+  max-width: 90%;
+  background: #edf3fa;
+  border: 1px solid #dce6f3;
+  border-radius: 15px 15px 4px 15px;
   padding: 12px 14px;
+  box-shadow: 0 2px 6px #20282308;
+}
+.message.user > span {
+  text-align: right;
+  color: var(--accent);
 }
 .message.user p {
   color: var(--accent);
 }
 .message.assistant {
-  padding: 3px 0;
+  align-self: flex-start;
+  max-width: 100%;
+  padding: 13px 14px;
+  border: 1px solid #e4e9e2;
+  border-radius: 15px 15px 15px 4px;
+  background: #fff;
+  box-shadow: 0 3px 10px #20282309;
 }
 .message .advisor-disclaimer {
   margin-top: 12px;
   padding-top: 10px;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid #edf0eb;
   color: var(--muted);
   font-size: 10px;
-  line-height: 1.8;
+  line-height: 1.65;
 }
 .assumptions {
   font-size: 10px;
-  border: 1px solid #d4e0f1;
-  background: #f2f7fd;
-  border-radius: 7px;
-  padding: 10px 12px;
+  border: 1px solid #e2e8e0;
+  background: #f8faf7;
+  border-radius: 11px;
+  padding: 12px 13px;
   margin-top: 18px;
   color: var(--muted);
-  line-height: 1.8;
+  line-height: 1.7;
 }
 .assumptions summary {
   display: flex;
@@ -1764,7 +1818,11 @@ caption {
   gap: 7px;
   font-size: 10px;
   color: var(--muted);
-  margin: 15px 0;
+  margin: 14px 0;
+  padding: 10px 12px;
+  border: 1px solid #e4e9e2;
+  border-radius: 10px;
+  background: #fff;
 }
 .loading-dot {
   width: 5px;
@@ -1776,6 +1834,8 @@ caption {
 .advisor-scroll > .error {
   margin-top: 10px;
   font-size: 10px;
+  border-radius: 10px;
+  padding: 10px 12px;
 }
 .dialog-backdrop {
   position: fixed;
@@ -2468,7 +2528,7 @@ caption {
     font-size: 10px;
   }
   .advisor-compose {
-    margin: 0 18px;
+    margin: 0 18px 14px;
   }
   .compose-actions > span {
     font-size: 10px;
