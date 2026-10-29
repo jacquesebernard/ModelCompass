@@ -85,6 +85,10 @@ export function createApp(
     app,
     config.HOST,
     options.production ?? process.env.NODE_ENV === "production",
+    {
+      allowedHosts: config.allowedHosts,
+      access: config.accessCredentials,
+    },
   );
   app.use("/api", apiRateLimit());
   app.use(express.json({ limit: "48kb" }));

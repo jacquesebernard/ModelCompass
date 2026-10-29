@@ -60,6 +60,12 @@ The AI interprets task requirements; Zod validates them. A conservative server g
 - Select a priority and **Find my matches** without AI, or describe a task after connecting an advisor. Relevant missing information prompts a concise follow-up. Assumptions and task constraints remain visible; workload assumptions are editable. Every advisor reply includes a reminder that AI can make mistakes and to experiment with different models for your business use case. Clear task constraints to start over.
 - Compare up to three models, their token prices, benchmark costs and estimated latency plus generation. Unsupported metrics remain unavailable.
 
+## Deploy on Render
+
+Create a **Web Service** using the Node runtime, not a Static Site. Use `npm ci --include=dev && npm run build` as the build command and `npm start` as the start command. Set the health check path to `/api/health`. Render supplies `PORT` and `RENDER_EXTERNAL_HOSTNAME`; the app binds to `0.0.0.0` on Render and accepts the assigned service hostname. Leave `PORT` to Render, and remove any existing `HOST=127.0.0.1` override or change it to `HOST=0.0.0.0`. If you add a custom domain, list its hostname in `ALLOWED_HOSTS` (comma-separated if there is more than one).
+
+Set `ACCESS_USERNAME` and a unique, strong `ACCESS_PASSWORD` in the Render environment settings. Both are required when the app runs on Render. The browser will show its standard HTTP Basic Authentication prompt; the health check remains unauthenticated. Keep provider keys in server-side environment variables, never in `VITE_` variables. For other hosts, set `HOST=0.0.0.0` when required and configure `ALLOWED_HOSTS` for the public hostname.
+
 ## Methods and architecture
 
 See [METHODOLOGY.md](METHODOLOGY.md) for formulas, ranking weights, unit conversion, missing-value rules and limitations. The same explanation is available in the app.
@@ -95,7 +101,7 @@ npm run build
 npm start
 ```
 
-`npm start` serves the production build with the same server and `.env`. Keep the default loopback binding for personal use. For an ordinary private self-hosted installation, configure `HOST` and `PORT`, use a TLS reverse proxy with access control, and ensure its forwarded Host/Origin matches the configured hostname. The app intentionally has no account system and rejects unrecognized hosts and cross-origin API access. Never expose a credential-bearing installation anonymously. This repository does not operate a shared service; operators are responsible for securing their own installations.
+`npm start` serves the production build with the same server and `.env`. Keep the default loopback binding for personal use. The app rejects unrecognized hosts and cross-origin API access. Optional HTTP Basic Authentication protects the UI and API; it is required automatically on Render. The health endpoint is left open for platform monitoring. Never expose a credential-bearing installation without access control. This repository does not operate a shared service; operators are responsible for securing their own installations.
 
 CI runs type checking, synthetic unit/integration tests and the production build without network APIs or credentials. See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
 

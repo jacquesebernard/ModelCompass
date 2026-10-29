@@ -1,3 +1,4 @@
+import { createHash, timingSafeEqual } from "node:crypto";
 import type { Express, RequestHandler } from "express";
 import { isIP } from "node:net";
 
@@ -10,7 +11,11 @@ function hostname(authority: string): string | null {
     return null;
   }
 }
-export function allowedHost(authority: string, bindHost: string): boolean {
+export function allowedHost(
+  authority: string,
+  bindHost: string,
+  allowedHosts: readonly string[] = [],
+): boolean {
   const host = hostname(authority);
   const configured = hostname(
     isIP(bindHost) === 6 ? `[${bindHost}]` : bindHost,
@@ -18,10 +23,46 @@ export function allowedHost(authority: string, bindHost: string): boolean {
   return (
     host !== null &&
     (loopbackHosts.has(host) ||
+      allowedHosts.some((candidate) => {
+        const normalized = hostname(candidate);
+        return (
+          normalized === host &&
+          normalized !== "0.0.0.0" &&
+          normalized !== "[::]"
+        );
+      }) ||
       (!!configured &&
         !["0.0.0.0", "[::]"].includes(configured) &&
         host === configured))
   );
+}
+
+function credentialDigest(value: string): Buffer {
+  return createHash("sha256").update(value, "utf8").digest();
+}
+
+function validBasicCredentials(
+  authorization: string | undefined,
+  usernameDigest: Buffer,
+  passwordDigest: Buffer,
+): boolean {
+  const match = /^Basic ([A-Za-z0-9+/]+={0,2})$/i.exec(authorization ?? "");
+  if (!match || match[1].length > 8192) return false;
+  const bytes = Buffer.from(match[1], "base64");
+  if (bytes.toString("base64") !== match[1]) return false;
+  const separator = bytes.indexOf(0x3a);
+  if (separator < 0) return false;
+  const username = bytes.subarray(0, separator).toString("utf8");
+  const password = bytes.subarray(separator + 1).toString("utf8");
+  const usernameMatches = timingSafeEqual(
+    credentialDigest(username),
+    usernameDigest,
+  );
+  const passwordMatches = timingSafeEqual(
+    credentialDigest(password),
+    passwordDigest,
+  );
+  return usernameMatches && passwordMatches;
 }
 export function secureProviderURL(value: string): boolean {
   try {
@@ -42,8 +83,19 @@ export function installSecurity(
   app: Express,
   bindHost: string,
   production: boolean,
+  options: {
+    allowedHosts?: readonly string[];
+    access?: { username: string; password: string } | null;
+  } = {},
 ) {
   app.disable("x-powered-by");
+  const allowedHosts = options.allowedHosts ?? [];
+  const usernameDigest = options.access
+    ? credentialDigest(options.access.username)
+    : null;
+  const passwordDigest = options.access
+    ? credentialDigest(options.access.password)
+    : null;
   app.use((req, res, next) => {
     res.set({
       "X-Content-Type-Options": "nosniff",
@@ -54,10 +106,25 @@ export function installSecurity(
         ? "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'"
         : "object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
     });
-    if (!allowedHost(req.headers.host ?? "", bindHost))
+    if (!allowedHost(req.headers.host ?? "", bindHost, allowedHosts))
       return res.status(403).json({ error: "Unrecognized host." });
     // Express routes are case-insensitive by default; the guard must match.
     const path = req.path.toLowerCase();
+    if (
+      usernameDigest &&
+      passwordDigest &&
+      path !== "/api/health" &&
+      !validBasicCredentials(
+        req.headers.authorization,
+        usernameDigest,
+        passwordDigest,
+      )
+    )
+      return res
+        .status(401)
+        .set("WWW-Authenticate", 'Basic realm="Model Compass", charset="UTF-8"')
+        .type("text/plain")
+        .send("Authentication required.");
     if (path === "/api" || path.startsWith("/api/")) {
       res.set("Cache-Control", "no-store");
       const origin = req.headers.origin;
