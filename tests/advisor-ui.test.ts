@@ -74,7 +74,6 @@ test("every advisor answer and clarification is followed by the business-use dis
         demo: true,
         onRequirements: () => {},
         onRanking: () => {},
-        onManual: () => {},
         onSetup: () => {},
         onReset: () => {},
         onBusy: () => {},

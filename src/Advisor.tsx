@@ -3,9 +3,7 @@ import {
   ArrowUpRight,
   ArrowUp,
   Sparkles,
-  SlidersHorizontal,
   Square,
-  CornerDownLeft,
   Check,
   RotateCcw,
 } from "lucide-react";
@@ -28,7 +26,6 @@ type Props = {
   requirements: Requirements | null;
   onRequirements: (r: Requirements) => void;
   onRanking: (r: Ranking) => void;
-  onManual: () => void;
   onSetup: () => void;
   onReset: () => void;
   onBusy: (busy: boolean) => void;
@@ -326,15 +323,6 @@ export default function Advisor(p: Props) {
             </button>
           )}
         </div>
-      </div>
-      <div className="advisor-footer">
-        <button onClick={p.onManual}>
-          <SlidersHorizontal size={13} /> Rank with my priorities{" "}
-          <CornerDownLeft size={12} />
-        </button>
-        <small>
-          Benchmarks guide the shortlist. Your task is the final test.
-        </small>
       </div>
     </aside>
   );

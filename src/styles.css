@@ -1176,28 +1176,6 @@ small {
   align-items: center;
   justify-content: center;
 }
-.advisor-footer {
-  padding: 12px 19px 16px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 11px;
-}
-.advisor-footer button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  color: var(--accent);
-  font-size: 10px;
-  width: 100%;
-  padding: 4px;
-}
-.advisor-footer small {
-  font-size: 10px;
-  color: var(--muted);
-  text-align: center;
-}
 .priorities-bar {
   display: flex;
   align-items: center;
@@ -1325,6 +1303,10 @@ small {
   flex-direction: column;
   padding: 25px 15px;
   gap: 11px;
+}
+.empty-comparison-full {
+  grid-column: 1 / -1;
+  min-height: 130px;
 }
 .empty-comparison > span {
   width: 32px;
@@ -2487,15 +2469,6 @@ caption {
   }
   .advisor-compose {
     margin: 0 18px;
-  }
-  .advisor-footer {
-    padding-bottom: 16px;
-  }
-  .advisor-footer button {
-    font-size: 10px;
-  }
-  .advisor-footer small {
-    font-size: 10px;
   }
   .compose-actions > span {
     font-size: 10px;

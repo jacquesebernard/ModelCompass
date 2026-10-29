@@ -292,16 +292,7 @@ export default function App() {
             className="connection-button"
             onClick={() => setModal("connections")}
           >
-            <span
-              className={`status-dot ${data?.state === "connected" ? "" : "amber"}`}
-            />
-            {demo
-              ? "Demo workspace"
-              : data?.state === "connected"
-                ? "Connected"
-                : data?.state === "stale"
-                  ? "Stale data"
-                  : "Connections"}
+            Connections
             <Plug size={14} />
           </button>
         </header>
@@ -858,7 +849,6 @@ export default function App() {
               requirements={requirements}
               onRequirements={acceptRequirements}
               onRanking={acceptRanking}
-              onManual={() => void rank()}
               onSetup={() => setModal("connections")}
               onReset={() => {
                 setRequirements(null);
@@ -920,15 +910,17 @@ export default function App() {
                     {ranking.eligible} eligible · {ranking.excluded} excluded
                   </span>
                 )}
-                <button
-                  className="text-button"
-                  onClick={() => {
-                    setSelected([]);
-                    setRanking(null);
-                  }}
-                >
-                  Clear comparison <X size={13} />
-                </button>
+                {(selected.length > 0 || ranking) && (
+                  <button
+                    className="text-button"
+                    onClick={() => {
+                      setSelected([]);
+                      setRanking(null);
+                    }}
+                  >
+                    Clear comparison <X size={13} />
+                  </button>
+                )}
               </div>
             </div>
             {notice && (
@@ -1090,10 +1082,9 @@ export default function App() {
                   </article>
                 );
               })}
-              {Array.from({ length: 3 - displayed.length }, (_, i) => (
+              {!displayed.length && (
                 <button
-                  className="empty-comparison"
-                  key={`empty${i}`}
+                  className="empty-comparison empty-comparison-full"
                   onClick={() => {
                     setView("table");
                     document
@@ -1104,14 +1095,12 @@ export default function App() {
                   <span>
                     <Plus size={20} />
                   </span>
-                  <strong>
-                    {displayed.length + i === 0
-                      ? "Your next great fit starts here"
-                      : "Room for another perspective"}
-                  </strong>
-                  <small>Select a bubble or browse the table to compare</small>
+                  <strong>Choose models to compare</strong>
+                  <small>
+                    Select a bubble or browse the table · Up to 3 models
+                  </small>
                 </button>
-              ))}
+              )}
             </div>
             {displayed.length > 0 && (
               <p className="estimate-note">
@@ -1137,9 +1126,6 @@ export default function App() {
           </span>
           <div>
             <span>Independent project · No tracking</span>
-            <button onClick={() => setModal("methodology")}>
-              Methodology <ArrowUpRight size={12} />
-            </button>
             <button onClick={reset}>
               Reset workspace <RotateCcw size={12} />
             </button>
